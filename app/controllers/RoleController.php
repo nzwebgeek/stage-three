@@ -20,7 +20,7 @@ class RoleController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Roles Index
+    | Role Management
     |--------------------------------------------------------------------------
     */
 
@@ -73,8 +73,19 @@ class RoleController extends Controller
 
         $this->csrf->requireValidToken();
 
-        $name = trim($_POST['name'] ?? '');
-        $description = trim($_POST['description'] ?? '');
+        $name = trim(
+            (string)($_POST['name'] ?? '')
+        );
+
+        $description = trim(
+            (string)($_POST['description'] ?? '')
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Name
+        |--------------------------------------------------------------------------
+        */
 
         if ($name === '') {
             $_SESSION['error'] = 'Role name is required.';
@@ -85,11 +96,17 @@ class RoleController extends Controller
 
         if (mb_strlen($name) > 100) {
             $_SESSION['error'] =
-                'Role name is too long.';
+                'Role name cannot exceed 100 characters.';
 
             header('Location: /admin/roles/create');
             exit;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check Duplicate
+        |--------------------------------------------------------------------------
+        */
 
         if ($this->roleRepository->exists($name)) {
             $_SESSION['error'] =
@@ -100,22 +117,18 @@ class RoleController extends Controller
         }
 
         try {
-            $success = $this->roleRepository->create(
+            $created = $this->roleRepository->create(
                 $name,
                 $description
             );
 
-            if (!$success) {
+            if (!$created) {
                 $_SESSION['error'] =
                     'Unable to create role.';
-
-                header('Location: /admin/roles/create');
-                exit;
+            } else {
+                $_SESSION['success'] =
+                    'Role created successfully.';
             }
-
-            $_SESSION['success'] =
-                'Role created successfully.';
-
         } catch (\Throwable $e) {
             $_SESSION['error'] =
                 'Unable to create role.';
@@ -135,7 +148,7 @@ class RoleController extends Controller
     {
         $this->auth->requireSuperAdmin();
 
-        $id = (int) ($_GET['id'] ?? 0);
+        $id = (int)($_GET['id'] ?? 0);
 
         if ($id <= 0) {
             $_SESSION['error'] =
@@ -178,9 +191,15 @@ class RoleController extends Controller
 
         $this->csrf->requireValidToken();
 
-        $id = (int) ($_POST['id'] ?? 0);
-        $name = trim($_POST['name'] ?? '');
-        $description = trim($_POST['description'] ?? '');
+        $id = (int)($_POST['id'] ?? 0);
+
+        $name = trim(
+            (string)($_POST['name'] ?? '')
+        );
+
+        $description = trim(
+            (string)($_POST['description'] ?? '')
+        );
 
         if ($id <= 0) {
             $_SESSION['error'] =
@@ -194,7 +213,21 @@ class RoleController extends Controller
             $_SESSION['error'] =
                 'Role name is required.';
 
-            header('Location: /admin/roles/edit?id=' . $id);
+            header(
+                'Location: /admin/roles/edit?id=' . $id
+            );
+
+            exit;
+        }
+
+        if (mb_strlen($name) > 100) {
+            $_SESSION['error'] =
+                'Role name cannot exceed 100 characters.';
+
+            header(
+                'Location: /admin/roles/edit?id=' . $id
+            );
+
             exit;
         }
 
@@ -210,55 +243,55 @@ class RoleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Prevent duplicate role names
-        |--------------------------------------------------------------------------
-        */
-
-        $existingRole = $this->roleRepository->findByName($name);
-
-        if (
-            $existingRole !== null
-            && (int) $existingRole['id'] !== $id
-        ) {
-            $_SESSION['error'] =
-                'Another role already uses that name.';
-
-            header('Location: /admin/roles/edit?id=' . $id);
-            exit;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Protect system roles
+        | Protect System Roles
         |--------------------------------------------------------------------------
         */
 
         if ($this->roleRepository->isSystemRole($id)) {
             $_SESSION['error'] =
-                'System roles cannot be modified.';
+                'This is a system role and cannot be modified.';
 
             header('Location: /admin/roles');
             exit;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Duplicate Name
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            strcasecmp(
+                trim((string)$role['name']),
+                $name
+            ) !== 0
+            && $this->roleRepository->exists($name)
+        ) {
+            $_SESSION['error'] =
+                'Another role already uses that name.';
+
+            header(
+                'Location: /admin/roles/edit?id=' . $id
+            );
+
+            exit;
+        }
+
         try {
-            $success = $this->roleRepository->update(
+            $updated = $this->roleRepository->update(
                 $id,
                 $name,
                 $description
             );
 
-            if (!$success) {
+            if (!$updated) {
                 $_SESSION['error'] =
                     'Unable to update role.';
-
-                header('Location: /admin/roles/edit?id=' . $id);
-                exit;
+            } else {
+                $_SESSION['success'] =
+                    'Role updated successfully.';
             }
-
-            $_SESSION['success'] =
-                'Role updated successfully.';
-
         } catch (\Throwable $e) {
             $_SESSION['error'] =
                 'Unable to update role.';
@@ -280,7 +313,7 @@ class RoleController extends Controller
 
         $this->csrf->requireValidToken();
 
-        $id = (int) ($_POST['id'] ?? 0);
+        $id = (int)($_POST['id'] ?? 0);
 
         if ($id <= 0) {
             $_SESSION['error'] =
@@ -302,7 +335,7 @@ class RoleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | System role protection
+        | System Role Protection
         |--------------------------------------------------------------------------
         */
 
@@ -316,7 +349,7 @@ class RoleController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Check assigned users
+        | Users Assigned To Role
         |--------------------------------------------------------------------------
         */
 
@@ -330,20 +363,22 @@ class RoleController extends Controller
             exit;
         }
 
-        try {
-            $success = $this->roleRepository->delete($id);
+        /*
+        |--------------------------------------------------------------------------
+        | Delete
+        |--------------------------------------------------------------------------
+        */
 
-            if (!$success) {
+        try {
+            $deleted = $this->roleRepository->delete($id);
+
+            if (!$deleted) {
                 $_SESSION['error'] =
                     'Unable to delete role.';
-
-                header('Location: /admin/roles');
-                exit;
+            } else {
+                $_SESSION['success'] =
+                    'Role deleted successfully.';
             }
-
-            $_SESSION['success'] =
-                'Role deleted successfully.';
-
         } catch (\Throwable $e) {
             $_SESSION['error'] =
                 'Unable to delete role.';

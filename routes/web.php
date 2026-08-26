@@ -14,9 +14,10 @@ use App\Controllers\AdminPostsController;
 use App\Controllers\AdminPagesController;
 use App\Controllers\CommentController;
 use App\Controllers\SettingsController;
+
 /*
 |--------------------------------------------------------------------------
-| Pages
+| Public Pages
 |--------------------------------------------------------------------------
 */
 
@@ -35,14 +36,111 @@ $router->get(
     [BlogController::class, 'show']
 );
 
+/*
+|--------------------------------------------------------------------------
+| Blog Comments
+|--------------------------------------------------------------------------
+*/
+
 $router->post(
     '/blog/comment/store',
     [CommentController::class, 'store']
 );
 
+/*
+|--------------------------------------------------------------------------
+| Contact
+|--------------------------------------------------------------------------
+*/
+
 $router->get(
-    '/admin/roles/create',
-    [RoleController::class, 'create']
+    '/contact',
+    [ContactController::class, 'index']
+);
+
+$router->post(
+    '/contact',
+    [ContactController::class, 'send']
+);
+
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+*/
+
+$router->get(
+    '/login',
+    [AuthController::class, 'login']
+);
+
+$router->post(
+    '/login',
+    [AuthController::class, 'authenticate']
+);
+
+$router->post(
+    '/logout',
+    [AuthController::class, 'logout']
+);
+
+$router->get(
+    '/register',
+    [AuthController::class, 'register']
+);
+
+$router->post(
+    '/register',
+    [AuthController::class, 'store']
+);
+
+$router->get(
+    '/verify',
+    [VerifyController::class, 'verify']
+);
+
+/*
+|--------------------------------------------------------------------------
+| Dashboard
+|--------------------------------------------------------------------------
+*/
+
+$router->get(
+    '/dashboard',
+    [DashboardController::class, 'index']
+);
+
+$router->get(
+    '/dashboard/posts/edit',
+    [DashboardController::class, 'editPost']
+);
+
+$router->post(
+    '/dashboard/posts/update',
+    [DashboardController::class, 'updatePost']
+);
+
+$router->post(
+    '/dashboard/posts/store',
+    [DashboardController::class, 'storePost']
+);
+
+$router->post(
+    '/dashboard/upload-image',
+    [DashboardController::class, 'uploadImage']
+);
+
+$router->post(
+    '/dashboard/save-theme',
+    [DashboardController::class, 'saveTheme']
+);
+
+$router->post(
+    '/dashboard/change-password',
+    [
+        DashboardController::class,
+        'changePassword'
+    ]
 );
 
 /*
@@ -67,11 +165,6 @@ $router->get(
 );
 
 $router->get(
-    '/admin/roles',
-    [RoleController::class, 'index']
-);
-
-$router->get(
     '/admin/users/edit',
     [AdminController::class, 'editUser']
 );
@@ -91,6 +184,12 @@ $router->post(
     [AdminController::class, 'deleteUser']
 );
 
+/*
+|--------------------------------------------------------------------------
+| Admin Settings
+|--------------------------------------------------------------------------
+*/
+
 $router->get(
     '/admin/settings',
     [SettingsController::class, 'index']
@@ -100,11 +199,13 @@ $router->post(
     '/admin/settings/update',
     [SettingsController::class, 'update']
 );
+
 /*
 |--------------------------------------------------------------------------
 | Admin Media
 |--------------------------------------------------------------------------
 */
+
 $router->get(
     '/admin/media',
     [AdminController::class, 'media']
@@ -129,6 +230,7 @@ $router->post(
     '/admin/media/delete',
     [AdminController::class, 'deleteMedia']
 );
+
 /*
 |--------------------------------------------------------------------------
 | Admin Posts
@@ -224,9 +326,19 @@ $router->post(
 
 /*
 |--------------------------------------------------------------------------
-| Roles
+| Admin Roles
 |--------------------------------------------------------------------------
 */
+
+$router->get(
+    '/admin/roles',
+    [RoleController::class, 'index']
+);
+
+$router->get(
+    '/admin/roles/create',
+    [RoleController::class, 'create']
+);
 
 $router->post(
     '/admin/roles/create',
@@ -247,94 +359,3 @@ $router->post(
     '/admin/roles/delete',
     [RoleController::class, 'delete']
 );
-
-/*
-|--------------------------------------------------------------------------
-| Dashboard
-|--------------------------------------------------------------------------
-*/
-
-$router->get(
-    '/dashboard',
-    [DashboardController::class, 'index']
-);
-
-$router->get(
-    '/dashboard/posts/edit',
-    [DashboardController::class, 'editPost']
-);
-
-$router->post(
-    '/dashboard/posts/update',
-    [DashboardController::class, 'updatePost']
-);
-
-$router->post(
-    '/dashboard/posts/store',
-    [DashboardController::class, 'storePost']
-);
-
-/*
-|--------------------------------------------------------------------------
-| Authentication
-|--------------------------------------------------------------------------
-*/
-
-$router->get(
-    '/login',
-    [AuthController::class, 'login']
-);
-
-$router->post(
-    '/login',
-    [AuthController::class, 'authenticate']
-);
-
-$router->post(
-    '/logout',
-    [AuthController::class, 'logout']
-);
-
-$router->get(
-    '/register',
-    [AuthController::class, 'register']
-);
-
-$router->post(
-    '/register',
-    [AuthController::class, 'store']
-);
-
-$router->get(
-    '/verify',
-    [VerifyController::class, 'verify']
-);
-
-$router->get(
-    '/contact',
-    [ContactController::class, 'index']
-);
-
-$router->post(
-    '/contact',
-    [ContactController::class, 'send']
-);
-
-$router->post(
-    '/dashboard/upload-image',
-    [DashboardController::class, 'uploadImage']
-);
-
-$router->post(
-    '/dashboard/save-theme',
-    [DashboardController::class, 'saveTheme']
-);
-
-$router->post(
-    '/dashboard/change-password',
-    [
-        DashboardController::class,
-        'changePassword'
-    ]
-);
-

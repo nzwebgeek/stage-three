@@ -18,15 +18,12 @@ class RoleController extends Controller
     ) {
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Roles
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * List roles.
+     */
     public function index(): void
     {
-        $this->auth->requireSuperAdmin();
+        $this->checkAccess();
 
         $roles = $this->roleRepository->all();
 
@@ -41,9 +38,12 @@ class RoleController extends Controller
         );
     }
 
+    /**
+     * Show create role page.
+     */
     public function create(): void
     {
-        $this->auth->requireSuperAdmin();
+        $this->checkAccess();
 
         $this->view(
             'admin/dashboard/roles/create',
@@ -55,10 +55,12 @@ class RoleController extends Controller
         );
     }
 
+    /**
+     * Store new role.
+     */
     public function store(): void
     {
-        $this->auth->requireSuperAdmin();
-
+        $this->checkAccess();
         $this->csrf->requireValidToken();
 
         $name = trim($_POST['name'] ?? '');
@@ -72,8 +74,7 @@ class RoleController extends Controller
         }
 
         if ($this->roleRepository->exists($name)) {
-            $_SESSION['error'] =
-                'Role already exists.';
+            $_SESSION['error'] = 'Role already exists.';
 
             header('Location: /admin/roles/create');
             exit;
@@ -84,18 +85,20 @@ class RoleController extends Controller
             $description
         );
 
-        $_SESSION['success'] =
-            'Role created successfully.';
+        $_SESSION['success'] = 'Role created successfully.';
 
         header('Location: /admin/roles');
         exit;
     }
 
+    /**
+     * Show edit role page.
+     */
     public function edit(): void
     {
-        $this->auth->requireSuperAdmin();
+        $this->checkAccess();
 
-        $id = (int) ($_GET['id'] ?? 0);
+        $id = (int)($_GET['id'] ?? 0);
 
         if ($id <= 0) {
             header('Location: /admin/roles');
@@ -120,31 +123,22 @@ class RoleController extends Controller
         );
     }
 
+    /**
+     * Update role.
+     */
     public function update(): void
     {
-        $this->auth->requireSuperAdmin();
-
+        $this->checkAccess();
         $this->csrf->requireValidToken();
 
-        $id = (int) ($_POST['id'] ?? 0);
+        $id = (int)($_POST['id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
 
-        if ($id <= 0) {
-            $_SESSION['error'] = 'Invalid role.';
+        if ($id <= 0 || $name === '') {
+            $_SESSION['error'] = 'Invalid role information.';
 
             header('Location: /admin/roles');
-            exit;
-        }
-
-        if ($name === '') {
-            $_SESSION['error'] =
-                'Role name is required.';
-
-            header(
-                'Location: /admin/roles/edit?id=' . $id
-            );
-
             exit;
         }
 
@@ -163,23 +157,33 @@ class RoleController extends Controller
             $description
         );
 
-        $_SESSION['success'] =
-            'Role updated successfully.';
+        $_SESSION['success'] = 'Role updated successfully.';
 
         header('Location: /admin/roles');
         exit;
     }
 
+    /**
+     * Delete role.
+     */
     public function delete(): void
     {
-        $this->auth->requireSuperAdmin();
-
+        $this->checkAccess();
         $this->csrf->requireValidToken();
 
-        $id = (int) ($_POST['id'] ?? 0);
+        $id = (int)($_POST['id'] ?? 0);
 
         if ($id <= 0) {
             $_SESSION['error'] = 'Invalid role.';
+
+            header('Location: /admin/roles');
+            exit;
+        }
+
+        $role = $this->roleRepository->findById($id);
+
+        if (!$role) {
+            $_SESSION['error'] = 'Role not found.';
 
             header('Location: /admin/roles');
             exit;
@@ -210,5 +214,21 @@ class RoleController extends Controller
 
         header('Location: /admin/roles');
         exit;
+    }
+
+    /**
+     * Restrict this controller to Super Admin users.
+     */
+    private function checkAccess(): void
+    {
+        if (!$this->auth->isLoggedIn()) {
+            header('Location: /login');
+            exit;
+        }
+
+        if (!$this->auth->isSuperAdmin()) {
+            header('Location: /admin');
+            exit;
+        }
     }
 }

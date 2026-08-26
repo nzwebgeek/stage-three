@@ -40,6 +40,11 @@ $router->post(
     [CommentController::class, 'store']
 );
 
+$router->get(
+    '/admin/roles/create',
+    [RoleController::class, 'create']
+);
+
 /*
 |--------------------------------------------------------------------------
 | Admin

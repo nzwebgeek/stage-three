@@ -22,7 +22,7 @@ class SettingsController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Settings Page
+    | Settings
     |--------------------------------------------------------------------------
     */
 
@@ -48,7 +48,7 @@ class SettingsController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Update Settings
+    | Update
     |--------------------------------------------------------------------------
     */
 
@@ -58,48 +58,27 @@ class SettingsController extends Controller
 
         $this->csrf->requireValidToken();
 
-        $siteName = trim(
-            $_POST['site_name'] ?? ''
-        );
-
-        $contactEmail = trim(
-            $_POST['contact_email'] ?? ''
-        );
-
-        $contactPhone = trim(
-            $_POST['contact_phone'] ?? ''
-        );
-
-        $copyrightText = trim(
-            $_POST['copyright_text'] ?? ''
-        );
-
-        $theme = trim(
-            $_POST['theme'] ?? 'Light'
-        );
-
-        $maintenanceMode =
-            isset($_POST['maintenance_mode'])
-                ? 1
-                : 0;
-
-        $adminEmail = trim(
-            $_POST['admin_email'] ?? ''
-        );
-
-        $seoTitle = trim(
-            $_POST['seo_title'] ?? ''
-        );
-
+        $siteName = trim($_POST['site_name'] ?? '');
+        $contactEmail = trim($_POST['contact_email'] ?? '');
+        $contactPhone = trim($_POST['contact_phone'] ?? '');
+        $copyrightText = trim($_POST['copyright_text'] ?? '');
+        $theme = trim($_POST['theme'] ?? 'Light');
+        $maintenanceMode = isset($_POST['maintenance_mode'])
+            ? 1
+            : 0;
+        $adminEmail = trim($_POST['admin_email'] ?? '');
+        $seoTitle = trim($_POST['seo_title'] ?? '');
         $seoDescription = trim(
             $_POST['seo_description'] ?? ''
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Email Validation
-        |--------------------------------------------------------------------------
-        */
+        if ($siteName === '') {
+            $_SESSION['error'] =
+                'Site name is required.';
+
+            header('Location: /admin/settings');
+            exit;
+        }
 
         if (
             $contactEmail !== ''
@@ -109,7 +88,7 @@ class SettingsController extends Controller
             )
         ) {
             $_SESSION['error'] =
-                'Please enter a valid contact email.';
+                'Contact email address is invalid.';
 
             header('Location: /admin/settings');
             exit;
@@ -123,15 +102,14 @@ class SettingsController extends Controller
             )
         ) {
             $_SESSION['error'] =
-                'Please enter a valid admin email.';
+                'Admin email address is invalid.';
 
             header('Location: /admin/settings');
             exit;
         }
 
         try {
-
-            $this->settingsRepository->update(
+            $success = $this->settingsRepository->update(
                 $siteName,
                 $contactEmail,
                 $contactPhone,
@@ -143,23 +121,18 @@ class SettingsController extends Controller
                 $seoDescription
             );
 
+            if (!$success) {
+                $_SESSION['error'] =
+                    'Unable to save settings.';
+
+                header('Location: /admin/settings');
+                exit;
+            }
+
             $_SESSION['success'] =
                 'Settings saved successfully.';
 
         } catch (\Throwable $e) {
-
-            /*
-             * Log the real exception server-side.
-             *
-             * Do not expose database/exception details
-             * to the browser.
-             */
-
-            error_log(
-                'Settings update failed: '
-                . $e->getMessage()
-            );
-
             $_SESSION['error'] =
                 'Unable to save settings.';
         }

@@ -1,242 +1,192 @@
-# Legacy PHP CMS Migration Journey
+# Legacy PHP CMS → MVC Migration
 
-> A personal learning project documenting the process of transforming a legacy procedural PHP CMS/Blog into a modern MVC application.
+A PHP/MySQL CMS being incrementally refactored from a procedural codebase into a more maintainable MVC architecture.
 
-## Overview
+This project started as a traditional PHP CMS/blog application and has evolved into a practical exploration of **object-oriented PHP, MVC architecture, database abstraction, authentication, security and software design**.
 
-This repository began as a way to document what I was learning while studying PHP architecture, software design, and modern development practices.
-
-The original project was a traditional PHP CMS/blog built with procedural code, `mysqli`, mixed HTML/PHP templates, and tightly coupled business logic. Rather than starting over, I chose to refactor it incrementally, using the existing application as a practical case study.
-
-The goal isn't simply to "rewrite" the application.
-
-It's to understand **why** modern architecture exists by experiencing the problems it solves.
+Rather than rewriting the application from scratch, I am progressively replacing tightly coupled components while documenting the architectural decisions and lessons learned along the way.
 
 ---
 
-## Original Application
+## 🎯 Project Goals
 
-The legacy application includes features commonly found in older PHP projects:
+The main goals of the project are to:
 
-* Procedural PHP
-* `mysqli` database access
-* PHP mixed directly with HTML
-* Global configuration files
-* Direct SQL queries in page files
-* Basic CMS functionality
-* Blog posts
-* Categories
-* User authentication
-* Admin dashboard
-* File uploads
-* Contact forms
-
-While functional, the codebase became increasingly difficult to maintain as features were added.
-
-Common issues included:
-
-* Repeated SQL logic
-* Duplicated validation
-* Large page files with multiple responsibilities
-* Difficult testing
-* Tight coupling between UI and business logic
-* Minimal separation of concerns
-
----
-
-# Why Migrate?
-
-Rather than abandoning the project, I decided to use it as a long-term refactoring exercise.
-
-This repository documents:
-
-* architectural decisions
-* mistakes
-* refactoring strategies
-* lessons learned
-* implementation notes
-* comparisons between "old" and "new" approaches
-
-The migration is intentionally incremental.
-
-Instead of rewriting everything at once, individual components are replaced while the application continues to function.
-
----
-
-# Project Goals
-
-* Learn MVC architecture through practice
-* Improve maintainability
-* Reduce duplicated code
-* Introduce dependency injection
-* Improve routing
+* Understand MVC architecture through practical implementation
 * Separate business logic from presentation
-* Improve security
-* Increase testability
-* Modernize development workflow
+* Improve maintainability and code organisation
+* Replace tightly coupled database access with cleaner abstractions
+* Introduce dependency injection
+* Improve authentication and security
+* Develop better testing and development practices
+* Gain experience refactoring an existing codebase
 
 ---
 
-# Planned Modern Features
+## 🏗️ Architecture
 
-## Architecture
+The application is being progressively migrated towards a structured MVC architecture.
 
-* MVC structure
+Key concepts explored include:
+
+* **Model-View-Controller (MVC)**
 * Front Controller pattern
-* Router
+* Routing
 * Controllers
-* Models
 * Services
 * Repository pattern
 * Dependency Injection
+* Object-Oriented PHP
+* Namespaces
 * PSR-4 autoloading
 * Composer
 
----
-
-## Database
-
-* Replace `mysqli` with PDO
-* Prepared statements everywhere
-* Repository abstraction
-* Database migrations
-* Seeders
+The migration is intentionally incremental so that the differences between the original procedural implementation and the newer architecture can be understood and evaluated.
 
 ---
 
-## Authentication
+## 🔐 Security
 
-* Session management improvements
+Security is an important part of the migration.
+
+Areas explored include:
+
 * Password hashing
-* Remember Me functionality
-* Role-based authorization
+* Session management
+* Authentication and authorisation
+* Role-based access control
 * CSRF protection
-* Login throttling
-
----
-
-## Security
-
-* CSRF tokens
-* XSS protection
-* Output escaping
 * Input validation
+* Output escaping
 * SQL injection prevention
-* Secure session handling
-* Content Security Policy (planned)
+* Secure database access using prepared statements
+
+Additional security improvements are planned as the application continues to evolve.
 
 ---
 
-## Frontend
+## 🗄️ Database
 
-* Template layout system
-* Reusable components
-* Flash messages
-* Pagination
-* Responsive admin panel
-* Better asset organization
+The original application used `mysqli` and contained database queries directly within page-level code.
+
+The migration is progressively moving towards:
+
+* PDO
+* Prepared statements
+* Repository-based database access
+* Separation of database logic from application logic
+* Improved configuration management
+
+Future work includes database migrations and seeders.
 
 ---
 
-## Developer Experience
+## 🔄 Migration Approach
+
+The project follows an incremental refactoring process:
+
+1. Understand the existing implementation
+2. Identify architectural or maintenance problems
+3. Design a cleaner approach
+4. Implement the new structure
+5. Test the changes
+6. Compare the new implementation with the legacy approach
+7. Repeat
+
+This approach has allowed me to work with an existing codebase rather than only building applications from scratch.
+
+---
+
+## 💡 What I've Learned
+
+One of the most valuable parts of this project has been learning that software architecture becomes increasingly important as an application grows.
+
+Through the migration I've developed a stronger understanding of:
+
+* Separation of concerns
+* Dependency injection
+* Repository and service patterns
+* Database abstraction
+* Authentication and authorisation
+* Secure database access
+* Refactoring legacy code
+* Organising larger PHP applications
+* Making code easier to maintain and extend
+
+I've also learned that good architecture is not about creating unnecessary complexity — it is about making an application easier to understand, change and maintain.
+
+---
+
+## 🛠️ Technologies
+
+**Backend**
+
+* PHP
+* Object-Oriented PHP
+* MVC
+* PDO
+* MySQL
+
+**Development**
 
 * Composer
-* Environment configuration
-* Error handling
-* Logging
-* Configuration management
-* Better project structure
+* Git
+* GitHub
+* PSR-4 autoloading
+
+**Web**
+
+* HTML
+* CSS
+* JavaScript
 
 ---
 
-## Code Quality
+## 📁 Project Structure
 
-* Namespaces
-* SOLID principles
-* Object-Oriented PHP
-* Design patterns where appropriate
-* Static analysis
-* Unit testing
-* Integration testing
+The application is organised around a structured PHP application architecture, including areas such as:
 
----
+```text
+app/
+bootstrap/
+config/
+public/
+routes/
+```
 
-# Migration Strategy
-
-The migration follows an incremental approach.
-
-Instead of replacing the entire application, each feature is migrated individually.
-
-Typical workflow:
-
-1. Understand the existing implementation.
-2. Identify pain points.
-3. Design a cleaner solution.
-4. Refactor into MVC.
-5. Test.
-6. Repeat.
-
-This approach allows continuous learning while keeping the application functional.
+The structure continues to evolve as additional parts of the legacy application are migrated.
 
 ---
 
-# What I've Learned So Far
+## 🚧 Current Status
 
-Some of the biggest lessons have little to do with syntax.
+This is an active refactoring project.
 
-I've learned that:
+Some components have been migrated to the newer architecture while other legacy areas remain in place. This is intentional: the project is being developed incrementally so that architectural changes can be evaluated as they are introduced.
 
-* Architecture matters more as projects grow.
-* Small abstractions often remove large amounts of duplicated code.
-* Good folder structure makes development easier.
-* Dependency injection improves flexibility.
-* Business logic should never live inside templates.
-* Refactoring is a skill that improves with practice.
-* Perfect architecture isn't the goal—maintainable architecture is.
+### Planned improvements
 
----
-
-# Current Status
-
-This project is actively evolving.
-
-Some areas are fully migrated, while others remain intentionally untouched so the differences between the legacy and modern implementations can be documented.
-
-The repository reflects the learning process, not just the finished result.
+* Complete remaining MVC migrations
+* Expand automated testing
+* Improve validation
+* Continue database abstraction
+* Improve reusable view components
+* Add development environment tooling
+* Continue security improvements
+* Explore REST API development
 
 ---
 
-# Roadmap
+## 📚 Why I Built This
 
-* [ ] Implement MVC framework foundation
-* [ ] Complete routing system
-* [ ] Refactor authentication
-* [ ] Migrate all database interactions to PDO
-* [ ] Introduce service layer
-* [ ] Implement repository pattern
-* [ ] Add dependency injection container
-* [ ] Improve validation
-* [ ] Build reusable view components
-* [ ] Add testing framework
-* [ ] Improve documentation
-* [ ] Docker development environment
-* [ ] REST API
-* [ ] Optional SPA frontend experiments
+I wanted to understand **why** modern PHP applications use patterns such as MVC, dependency injection and repository abstractions rather than simply learning the terminology.
 
----
+Starting with an existing procedural application provided an opportunity to experience the problems that these patterns are designed to solve.
 
-# Philosophy
-
-This project isn't about creating yet another PHP framework.
-
-It's about understanding how modern PHP applications are structured by carefully evolving a real-world legacy codebase.
-
-Every refactor is documented, every mistake is part of the process, and every improvement is an opportunity to learn.
-
-If you're also migrating an older PHP project, I hope these notes save you time—or at least reassure you that refactoring is rarely a straight line.
+The project therefore serves as both a working application and a practical record of my progression from procedural PHP towards more structured application development.
 
 ---
 
 ## License
 
-This repository is provided for educational purposes and personal learning. Feel free to explore the code, compare approaches, and adapt ideas for your own projects.
+This project is provided for educational and personal development purposes.

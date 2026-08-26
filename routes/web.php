@@ -40,11 +40,6 @@ $router->post(
     [CommentController::class, 'store']
 );
 
-$router->get(
-    '/contact',
-    [PageController::class, 'show']
-);
-
 /*
 |--------------------------------------------------------------------------
 | Admin

@@ -20,15 +20,12 @@ class SettingsController extends Controller
     ) {
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Settings
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * Display settings page.
+     */
     public function index(): void
     {
-        $this->auth->requireAdmin();
+        $this->requireAdmin();
 
         $settings = $this->settingsRepository->get();
         $blogSettings = $this->blogSettingsRepository->get();
@@ -45,9 +42,12 @@ class SettingsController extends Controller
         );
     }
 
+    /**
+     * Update settings.
+     */
     public function update(): void
     {
-        $this->auth->requireAdmin();
+        $this->requireAdmin();
 
         $this->csrf->requireValidToken();
 
@@ -77,16 +77,27 @@ class SettingsController extends Controller
             $_SESSION['success'] =
                 'Settings saved successfully.';
         } catch (\Throwable $e) {
-            error_log(
-                'SettingsController::update() failed: '
-                . $e->getMessage()
-            );
-
             $_SESSION['error'] =
                 'Unable to save settings.';
         }
 
         header('Location: /admin/settings');
         exit;
+    }
+
+    /**
+     * Require logged-in administrator.
+     */
+    private function requireAdmin(): void
+    {
+        if (!$this->auth->isLoggedIn()) {
+            header('Location: /login');
+            exit;
+        }
+
+        if (!$this->auth->isAdmin()) {
+            header('Location: /dashboard');
+            exit;
+        }
     }
 }

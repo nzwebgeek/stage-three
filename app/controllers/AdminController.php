@@ -26,7 +26,7 @@ class AdminController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Dashboard
+    | Dashboard
     |--------------------------------------------------------------------------
     */
 
@@ -95,7 +95,6 @@ class AdminController extends Controller
     public function storeUser(): void
     {
         $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
         $username = trim($_POST['username'] ?? '');
@@ -103,60 +102,34 @@ class AdminController extends Controller
         $password = $_POST['password'] ?? '';
         $role = trim($_POST['role'] ?? 'User');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Basic validation
-        |--------------------------------------------------------------------------
-        */
-
         if ($username === '') {
             $_SESSION['error'] = 'Username is required.';
-
             header('Location: /admin/users/create');
             exit;
         }
 
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (
+            $email === ''
+            || !filter_var($email, FILTER_VALIDATE_EMAIL)
+        ) {
             $_SESSION['error'] = 'Please enter a valid email address.';
-
             header('Location: /admin/users/create');
             exit;
         }
 
         if ($password === '') {
             $_SESSION['error'] = 'Password is required.';
-
             header('Location: /admin/users/create');
             exit;
         }
-
-        if ($role === '') {
-            $_SESSION['error'] = 'Please select a role.';
-
-            header('Location: /admin/users/create');
-            exit;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Password validation
-        |--------------------------------------------------------------------------
-        */
 
         $passwordError = $this->passwords->validate($password);
 
         if ($passwordError !== null) {
             $_SESSION['error'] = $passwordError;
-
             header('Location: /admin/users/create');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Duplicate username
-        |--------------------------------------------------------------------------
-        */
 
         if ($this->userRepository->usernameExists($username)) {
             $_SESSION['error'] =
@@ -166,12 +139,6 @@ class AdminController extends Controller
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Duplicate email
-        |--------------------------------------------------------------------------
-        */
-
         if ($this->userRepository->emailExists($email)) {
             $_SESSION['error'] =
                 'Email address already exists.';
@@ -179,12 +146,6 @@ class AdminController extends Controller
             header('Location: /admin/users/create');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Find role
-        |--------------------------------------------------------------------------
-        */
 
         $roleId = $this->userRepository->findRoleIdByName($role);
 
@@ -195,12 +156,6 @@ class AdminController extends Controller
             header('Location: /admin/users/create');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create user
-        |--------------------------------------------------------------------------
-        */
 
         try {
             $success = $this->userRepository->createUser(
@@ -238,9 +193,7 @@ class AdminController extends Controller
         $id = (int) ($_GET['id'] ?? 0);
 
         if ($id <= 0) {
-            $_SESSION['error'] =
-                'Invalid user.';
-
+            $_SESSION['error'] = 'Invalid user.';
             header('Location: /admin/users');
             exit;
         }
@@ -248,9 +201,7 @@ class AdminController extends Controller
         $user = $this->userRepository->findById($id);
 
         if (!$user) {
-            $_SESSION['error'] =
-                'User not found.';
-
+            $_SESSION['error'] = 'User not found.';
             header('Location: /admin/users');
             exit;
         }
@@ -268,14 +219,7 @@ class AdminController extends Controller
 
     public function updateUser(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Only Super Admins can change users/roles
-        |--------------------------------------------------------------------------
-        */
-
         $this->auth->requireSuperAdmin();
-
         $this->csrf->requireValidToken();
 
         $id = (int) ($_POST['id'] ?? 0);
@@ -284,22 +228,29 @@ class AdminController extends Controller
         $role = trim($_POST['role'] ?? 'User');
 
         if ($id <= 0) {
-            $_SESSION['error'] =
-                'Invalid user.';
+            $_SESSION['error'] = 'Invalid user.';
+            header('Location: /admin/users');
+            exit;
+        }
 
+        $existingUser = $this->userRepository->findById($id);
+
+        if (!$existingUser) {
+            $_SESSION['error'] = 'User not found.';
             header('Location: /admin/users');
             exit;
         }
 
         if ($username === '') {
-            $_SESSION['error'] =
-                'Username is required.';
-
+            $_SESSION['error'] = 'Username is required.';
             header('Location: /admin/users/edit?id=' . $id);
             exit;
         }
 
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (
+            $email === ''
+            || !filter_var($email, FILTER_VALIDATE_EMAIL)
+        ) {
             $_SESSION['error'] =
                 'Please enter a valid email address.';
 
@@ -307,44 +258,10 @@ class AdminController extends Controller
             exit;
         }
 
-        if ($role === '') {
-            $_SESSION['error'] =
-                'Please select a role.';
-
-            header('Location: /admin/users/edit?id=' . $id);
-            exit;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Verify user exists
-        |--------------------------------------------------------------------------
-        */
-
-        $existingUser = $this->userRepository->findById($id);
-
-        if (!$existingUser) {
-            $_SESSION['error'] =
-                'User not found.';
-
-            header('Location: /admin/users');
-            exit;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Check duplicate username
-        |--------------------------------------------------------------------------
-        |
-        | usernameExists() cannot distinguish the current user, so we check
-        | whether the submitted username belongs to another account.
-        |
-        */
-
         if (
             strcasecmp(
                 $username,
-                (string) ($existingUser['username'] ?? '')
+                (string) $existingUser['username']
             ) !== 0
             && $this->userRepository->usernameExists($username)
         ) {
@@ -355,16 +272,10 @@ class AdminController extends Controller
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Check duplicate email
-        |--------------------------------------------------------------------------
-        */
-
         if (
             strcasecmp(
                 $email,
-                (string) ($existingUser['email'] ?? '')
+                (string) $existingUser['email']
             ) !== 0
             && $this->userRepository->emailExists($email)
         ) {
@@ -375,12 +286,6 @@ class AdminController extends Controller
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Find role
-        |--------------------------------------------------------------------------
-        */
-
         $roleId = $this->userRepository->findRoleIdByName($role);
 
         if ($roleId === null) {
@@ -390,12 +295,6 @@ class AdminController extends Controller
             header('Location: /admin/users/edit?id=' . $id);
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Update user
-        |--------------------------------------------------------------------------
-        */
 
         try {
             $success = $this->userRepository->updateUser(
@@ -427,31 +326,16 @@ class AdminController extends Controller
 
     public function deleteUser(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Only Super Admins can delete users
-        |--------------------------------------------------------------------------
-        */
-
         $this->auth->requireSuperAdmin();
-
         $this->csrf->requireValidToken();
 
         $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
-            $_SESSION['error'] =
-                'Invalid user.';
-
+            $_SESSION['error'] = 'Invalid user.';
             header('Location: /admin/users');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent deleting yourself
-        |--------------------------------------------------------------------------
-        */
 
         if ($id === $this->auth->currentUserId()) {
             $_SESSION['error'] =
@@ -460,12 +344,6 @@ class AdminController extends Controller
             header('Location: /admin/users');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Verify user exists
-        |--------------------------------------------------------------------------
-        */
 
         $user = $this->userRepository->findById($id);
 
@@ -476,34 +354,6 @@ class AdminController extends Controller
             header('Location: /admin/users');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent deleting another Super Admin
-        |--------------------------------------------------------------------------
-        |
-        | This is an additional safety layer. If your application needs
-        | multiple Super Admins to be deletable, this can be changed.
-        |
-        */
-
-        $targetRole = strtolower(
-            trim((string) ($user['role'] ?? ''))
-        );
-
-        if ($targetRole === 'super admin') {
-            $_SESSION['error'] =
-                'Super Admin accounts cannot be deleted here.';
-
-            header('Location: /admin/users');
-            exit;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Delete user
-        |--------------------------------------------------------------------------
-        */
 
         try {
             $success = $this->userRepository->deleteUser($id);
@@ -530,7 +380,7 @@ class AdminController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Media Library
+    | Media
     |--------------------------------------------------------------------------
     */
 
@@ -568,7 +418,6 @@ class AdminController extends Controller
     public function storeMedia(): void
     {
         $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
         if (
@@ -581,12 +430,6 @@ class AdminController extends Controller
             header('Location: /admin/media/upload');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Check upload error
-        |--------------------------------------------------------------------------
-        */
 
         if (
             !isset($_FILES['image']['error'])
@@ -619,15 +462,6 @@ class AdminController extends Controller
     public function viewMedia(): void
     {
         $this->auth->requireAdmin();
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET requests do not need CSRF validation
-        |--------------------------------------------------------------------------
-        |
-        | CSRF protection belongs on state-changing requests such as POST.
-        |
-        */
 
         $id = (int) ($_GET['id'] ?? 0);
 
@@ -663,7 +497,6 @@ class AdminController extends Controller
     public function deleteMedia(): void
     {
         $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
         $id = (int) ($_POST['id'] ?? 0);
@@ -676,12 +509,6 @@ class AdminController extends Controller
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Verify image exists
-        |--------------------------------------------------------------------------
-        */
-
         $image = $this->imageRepository->findById($id);
 
         if (!$image) {
@@ -691,12 +518,6 @@ class AdminController extends Controller
             header('Location: /admin/media');
             exit;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Delete image
-        |--------------------------------------------------------------------------
-        */
 
         try {
             $success = $this->imageRepository->delete($id);

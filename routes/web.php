@@ -17,13 +17,7 @@ use App\Controllers\SettingsController;
 
 /*
 |--------------------------------------------------------------------------
-| Pages
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| Home
+| Public Pages
 |--------------------------------------------------------------------------
 */
 
@@ -31,12 +25,6 @@ $router->get(
     '/',
     [PageController::class, 'home']
 );
-
-/*
-|--------------------------------------------------------------------------
-| Blog
-|--------------------------------------------------------------------------
-*/
 
 $router->get(
     '/blog',
@@ -69,12 +57,41 @@ $router->post(
     [ContactController::class, 'send']
 );
 
-
 /*
 |--------------------------------------------------------------------------
-| Admin
+| Authentication
 |--------------------------------------------------------------------------
 */
+
+$router->get(
+    '/login',
+    [AuthController::class, 'login']
+);
+
+$router->post(
+    '/login',
+    [AuthController::class, 'authenticate']
+);
+
+$router->post(
+    '/logout',
+    [AuthController::class, 'logout']
+);
+
+$router->get(
+    '/register',
+    [AuthController::class, 'register']
+);
+
+$router->post(
+    '/register',
+    [AuthController::class, 'store']
+);
+
+$router->get(
+    '/verify',
+    [VerifyController::class, 'verify']
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -86,7 +103,6 @@ $router->get(
     '/admin',
     [AdminController::class, 'index']
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -104,14 +120,14 @@ $router->get(
     [AdminController::class, 'createUser']
 );
 
-$router->get(
-    '/admin/users/edit',
-    [AdminController::class, 'editUser']
-);
-
 $router->post(
     '/admin/users/create',
     [AdminController::class, 'storeUser']
+);
+
+$router->get(
+    '/admin/users/edit',
+    [AdminController::class, 'editUser']
 );
 
 $router->post(
@@ -124,6 +140,41 @@ $router->post(
     [AdminController::class, 'deleteUser']
 );
 
+/*
+|--------------------------------------------------------------------------
+| Admin Roles
+|--------------------------------------------------------------------------
+*/
+
+$router->get(
+    '/admin/roles',
+    [RoleController::class, 'index']
+);
+
+$router->get(
+    '/admin/roles/create',
+    [RoleController::class, 'create']
+);
+
+$router->post(
+    '/admin/roles/create',
+    [RoleController::class, 'store']
+);
+
+$router->get(
+    '/admin/roles/edit',
+    [RoleController::class, 'edit']
+);
+
+$router->post(
+    '/admin/roles/update',
+    [RoleController::class, 'update']
+);
+
+$router->post(
+    '/admin/roles/delete',
+    [RoleController::class, 'delete']
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -140,7 +191,6 @@ $router->post(
     '/admin/settings/update',
     [SettingsController::class, 'update']
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -172,7 +222,6 @@ $router->post(
     '/admin/media/delete',
     [AdminController::class, 'deleteMedia']
 );
-
 
 /*
 |--------------------------------------------------------------------------
@@ -210,7 +259,6 @@ $router->post(
     [AdminPostsController::class, 'delete']
 );
 
-
 /*
 |--------------------------------------------------------------------------
 | Admin Pages
@@ -247,7 +295,6 @@ $router->post(
     [AdminPagesController::class, 'delete']
 );
 
-
 /*
 |--------------------------------------------------------------------------
 | Admin Comments
@@ -268,68 +315,6 @@ $router->post(
     '/admin/comments/delete',
     [CommentController::class, 'delete']
 );
-
-
-/*
-|--------------------------------------------------------------------------
-| Roles
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| Role List
-|--------------------------------------------------------------------------
-*/
-
-$router->get(
-    '/admin/roles',
-    [RoleController::class, 'index']
-);
-
-/*
-|--------------------------------------------------------------------------
-| Create Role
-|--------------------------------------------------------------------------
-*/
-
-$router->get(
-    '/admin/roles/create',
-    [RoleController::class, 'create']
-);
-
-$router->post(
-    '/admin/roles/create',
-    [RoleController::class, 'store']
-);
-
-/*
-|--------------------------------------------------------------------------
-| Edit Role
-|--------------------------------------------------------------------------
-*/
-
-$router->get(
-    '/admin/roles/edit',
-    [RoleController::class, 'edit']
-);
-
-$router->post(
-    '/admin/roles/update',
-    [RoleController::class, 'update']
-);
-
-/*
-|--------------------------------------------------------------------------
-| Delete Role
-|--------------------------------------------------------------------------
-*/
-
-$router->post(
-    '/admin/roles/delete',
-    [RoleController::class, 'delete']
-);
-
 
 /*
 |--------------------------------------------------------------------------
@@ -369,52 +354,24 @@ $router->post(
 
 $router->post(
     '/dashboard/change-password',
-    [
-        DashboardController::class,
-        'changePassword'
-    ]
+    [DashboardController::class, 'changePassword']
 );
-
 
 /*
 |--------------------------------------------------------------------------
-| Authentication
+| Dynamic Public CMS Pages
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| Put this route AFTER the explicit routes above so that URLs such as
+| /contact, /blog and /login are handled by their specific controllers.
+|
+| This assumes your Router supports {slug} parameters.
+|
 */
 
 $router->get(
-    '/login',
-    [AuthController::class, 'login']
-);
-
-$router->post(
-    '/login',
-    [AuthController::class, 'authenticate']
-);
-
-$router->post(
-    '/logout',
-    [AuthController::class, 'logout']
-);
-
-$router->get(
-    '/register',
-    [AuthController::class, 'register']
-);
-
-$router->post(
-    '/register',
-    [AuthController::class, 'store']
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| Email Verification
-|--------------------------------------------------------------------------
-*/
-
-$router->get(
-    '/verify',
-    [VerifyController::class, 'verify']
+    '/page/{slug}',
+    [PageController::class, 'show']
 );

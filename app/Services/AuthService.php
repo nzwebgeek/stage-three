@@ -10,8 +10,9 @@ use App\Repositories\UserRepository;
 |--------------------------------------------------------------------------
 | AuthService
 |--------------------------------------------------------------------------
-| Handles authentication, sessions and authorization.
-|--------------------------------------------------------------------------
+|
+| Handles authentication, registration, sessions and authorization.
+|
 */
 
 class AuthService
@@ -50,7 +51,7 @@ class AuthService
             );
         }
 
-        if (!(bool)$user['email_verified']) {
+        if (!(bool) $user['email_verified']) {
             return ServiceResult::warning(
                 'Please verify your email before logging in.'
             );
@@ -64,9 +65,11 @@ class AuthService
 
         session_regenerate_id(true);
 
-        $_SESSION['user_id'] = (int)$user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['role'] = strtolower(trim((string)$user['role']));
+        $_SESSION['user_id'] = (int) $user['id'];
+        $_SESSION['username'] = (string) $user['username'];
+        $_SESSION['role'] = strtolower(
+            trim((string) ($user['role'] ?? 'user'))
+        );
         $_SESSION['last_activity'] = time();
 
         return ServiceResult::success(
@@ -85,20 +88,16 @@ class AuthService
         $_SESSION = [];
 
         if (ini_get('session.use_cookies')) {
-
             $params = session_get_cookie_params();
 
             setcookie(
                 session_name(),
                 '',
-                [
-                    'expires' => time() - 42000,
-                    'path' => $params['path'],
-                    'domain' => $params['domain'],
-                    'secure' => $params['secure'],
-                    'httponly' => $params['httponly'],
-                    'samesite' => $params['samesite'] ?? 'Lax',
-                ]
+                time() - 42000,
+                $params['path'],
+                $params['domain'],
+                (bool) $params['secure'],
+                (bool) $params['httponly']
             );
         }
 
@@ -118,16 +117,19 @@ class AuthService
         string $confirmPassword
     ): ServiceResult {
 
-        $username = trim($username);
-        $email = trim($email);
-
         if ($username === '') {
             return ServiceResult::error(
                 'Username is required.'
             );
         }
 
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email === '') {
+            return ServiceResult::error(
+                'Email address is required.'
+            );
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return ServiceResult::error(
                 'Please enter a valid email address.'
             );
@@ -153,13 +155,13 @@ class AuthService
 
         /*
         |--------------------------------------------------------------------------
-        | New registrations always receive the User role
+        | New users receive the User role
         |--------------------------------------------------------------------------
         */
 
         $roleId = $this->users->findRoleIdByName('User');
 
-        if (!$roleId) {
+        if ($roleId === null) {
             return ServiceResult::error(
                 'Default role not found.'
             );
@@ -169,25 +171,32 @@ class AuthService
 
         $hashedPassword = $this->passwords->hash($password);
 
-        $success = $this->users->createUser(
-            $username,
-            $email,
-            $hashedPassword,
-            $roleId,
-            $token
-        );
+        try {
+            $success = $this->users->createUser(
+                $username,
+                $email,
+                $hashedPassword,
+                $roleId,
+                $token
+            );
 
-        if (!$success) {
+            if (!$success) {
+                return ServiceResult::error(
+                    'Registration failed.'
+                );
+            }
+
+            $this->mailer->sendVerificationEmail(
+                $email,
+                $username,
+                $token
+            );
+
+        } catch (\Throwable $e) {
             return ServiceResult::error(
                 'Registration failed.'
             );
         }
-
-        $this->mailer->sendVerificationEmail(
-            $email,
-            $username,
-            $token
-        );
 
         return ServiceResult::success(
             'Registration successful. Please check your email to verify your account.'
@@ -210,7 +219,7 @@ class AuthService
 
         if (
             !is_int($lastActivity)
-            && !ctype_digit((string)$lastActivity)
+            && !ctype_digit((string) $lastActivity)
         ) {
             $this->logout();
 
@@ -218,7 +227,7 @@ class AuthService
         }
 
         if (
-            time() - (int)$lastActivity
+            time() - (int) $lastActivity
             >= self::SESSION_IDLE_TIMEOUT
         ) {
             $this->logout();
@@ -264,7 +273,7 @@ class AuthService
 
     /*
     |--------------------------------------------------------------------------
-    | Authorization Requirements
+    | Require Login
     |--------------------------------------------------------------------------
     */
 
@@ -276,6 +285,12 @@ class AuthService
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Require Admin
+    |--------------------------------------------------------------------------
+    */
+
     public function requireAdmin(): void
     {
         $this->requireLogin();
@@ -285,6 +300,12 @@ class AuthService
             exit;
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Require Super Admin
+    |--------------------------------------------------------------------------
+    */
 
     public function requireSuperAdmin(): void
     {
@@ -308,20 +329,20 @@ class AuthService
             return null;
         }
 
-        return (int)$_SESSION['user_id'];
+        return (int) $_SESSION['user_id'];
     }
 
     public function currentUsername(): ?string
     {
         return isset($_SESSION['username'])
-            ? (string)$_SESSION['username']
+            ? (string) $_SESSION['username']
             : null;
     }
 
     public function currentRole(): ?string
     {
         return isset($_SESSION['role'])
-            ? strtolower(trim((string)$_SESSION['role']))
+            ? strtolower(trim((string) $_SESSION['role']))
             : null;
     }
 }

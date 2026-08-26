@@ -31,7 +31,7 @@ class RoleRepository extends Repository
 
     /*
     |--------------------------------------------------------------------------
-    | Find
+    | Find By ID
     |--------------------------------------------------------------------------
     */
 
@@ -48,7 +48,34 @@ class RoleRepository extends Repository
         ");
 
         $stmt->execute([
-            'id' => $id
+            'id' => $id,
+        ]);
+
+        $role = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $role ?: null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Find By Name
+    |--------------------------------------------------------------------------
+    */
+
+    public function findByName(string $name): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT
+                id,
+                name,
+                description
+            FROM roles
+            WHERE name = :name
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            'name' => $name,
         ]);
 
         $role = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -81,7 +108,7 @@ class RoleRepository extends Repository
 
         return $stmt->execute([
             'name' => $name,
-            'description' => $description
+            'description' => $description,
         ]);
     }
 
@@ -107,7 +134,7 @@ class RoleRepository extends Repository
         return $stmt->execute([
             'id' => $id,
             'name' => $name,
-            'description' => $description
+            'description' => $description,
         ]);
     }
 
@@ -125,7 +152,7 @@ class RoleRepository extends Repository
         ");
 
         return $stmt->execute([
-            'id' => $id
+            'id' => $id,
         ]);
     }
 
@@ -144,16 +171,19 @@ class RoleRepository extends Repository
         ");
 
         $stmt->execute([
-            'id' => $id
+            'id' => $id,
         ]);
 
-        return (int)$stmt->fetchColumn();
+        return (int) $stmt->fetchColumn();
     }
 
     /*
     |--------------------------------------------------------------------------
     | System Roles
     |--------------------------------------------------------------------------
+    |
+    | Adjust these IDs if your database uses different IDs.
+    |
     */
 
     public function isSystemRole(int $id): bool
@@ -167,7 +197,7 @@ class RoleRepository extends Repository
 
     /*
     |--------------------------------------------------------------------------
-    | Role Exists
+    | Exists
     |--------------------------------------------------------------------------
     */
 
@@ -176,38 +206,13 @@ class RoleRepository extends Repository
         $stmt = $this->db->prepare("
             SELECT COUNT(*)
             FROM roles
-            WHERE LOWER(name) = LOWER(:name)
-        ");
-
-        $stmt->execute([
-            'name' => $name
-        ]);
-
-        return (int)$stmt->fetchColumn() > 0;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Role Exists Except Current Role
-    |--------------------------------------------------------------------------
-    */
-
-    public function existsExceptId(
-        string $name,
-        int $id
-    ): bool {
-        $stmt = $this->db->prepare("
-            SELECT COUNT(*)
-            FROM roles
-            WHERE LOWER(name) = LOWER(:name)
-            AND id != :id
+            WHERE name = :name
         ");
 
         $stmt->execute([
             'name' => $name,
-            'id' => $id
         ]);
 
-        return (int)$stmt->fetchColumn() > 0;
+        return (int) $stmt->fetchColumn() > 0;
     }
 }

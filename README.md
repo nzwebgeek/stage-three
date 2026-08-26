@@ -8,6 +8,11 @@ Rather than rewriting the application from scratch, I am progressively replacing
 
 ---
 
+## 📸 Application
+
+![Admin Dashboard](docs/images/admin-dashboard.jpg)
+
+---
 ## 🎯 Project Goals
 
 The main goals of the project are to:

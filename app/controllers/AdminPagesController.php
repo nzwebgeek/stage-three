@@ -75,17 +75,11 @@ class AdminPagesController extends Controller
     public function store(): void
     {
         $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
         $data = [
-            'title' => trim(
-                $_POST['title'] ?? ''
-            ),
-
-            'slug' => trim(
-                $_POST['slug'] ?? ''
-            ),
+            'title' => trim($_POST['title'] ?? ''),
+            'slug' => trim($_POST['slug'] ?? ''),
 
             'hero_title' => trim(
                 $_POST['hero_title'] ?? ''
@@ -95,10 +89,9 @@ class AdminPagesController extends Controller
                 $_POST['hero_subtitle'] ?? ''
             ),
 
-            'hero_media_id' =>
-                !empty($_POST['hero_media_id'])
-                    ? (int)$_POST['hero_media_id']
-                    : null,
+            'hero_media_id' => !empty($_POST['hero_media_id'])
+                ? (int) $_POST['hero_media_id']
+                : null,
 
             'hero_image_alt' => trim(
                 $_POST['hero_image_alt'] ?? ''
@@ -152,8 +145,7 @@ class AdminPagesController extends Controller
                 $_POST['column5_content'] ?? ''
             ),
 
-            'status' =>
-                $_POST['status'] ?? 'draft',
+            'status' => $_POST['status'] ?? 'draft',
 
             'seo_title' => trim(
                 $_POST['seo_title'] ?? ''
@@ -163,12 +155,6 @@ class AdminPagesController extends Controller
                 $_POST['seo_description'] ?? ''
             ),
         ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Basic Validation
-        |--------------------------------------------------------------------------
-        */
 
         if ($data['title'] === '') {
             $_SESSION['error'] =
@@ -186,12 +172,18 @@ class AdminPagesController extends Controller
             exit;
         }
 
-        $this->pageRepository->create($data);
+        try {
+            $this->pageRepository->create($data);
 
-        header(
-            'Location: /admin/pages?success=created'
-        );
+            $_SESSION['success'] =
+                'Page created successfully.';
 
+        } catch (\Throwable $e) {
+            $_SESSION['error'] =
+                'Unable to create page.';
+        }
+
+        header('Location: /admin/pages');
         exit;
     }
 
@@ -205,11 +197,12 @@ class AdminPagesController extends Controller
     {
         $this->auth->requireAdmin();
 
-        $id = (int)(
-            $_GET['id'] ?? 0
-        );
+        $id = (int) ($_GET['id'] ?? 0);
 
         if ($id <= 0) {
+            $_SESSION['error'] =
+                'Invalid page.';
+
             header('Location: /admin/pages');
             exit;
         }
@@ -217,6 +210,9 @@ class AdminPagesController extends Controller
         $page = $this->pageRepository->findById($id);
 
         if (!$page) {
+            $_SESSION['error'] =
+                'Page not found.';
+
             header('Location: /admin/pages');
             exit;
         }
@@ -244,14 +240,14 @@ class AdminPagesController extends Controller
     public function update(): void
     {
         $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
-        $id = (int)(
-            $_POST['id'] ?? 0
-        );
+        $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
+            $_SESSION['error'] =
+                'Invalid page.';
+
             header('Location: /admin/pages');
             exit;
         }
@@ -259,6 +255,9 @@ class AdminPagesController extends Controller
         $page = $this->pageRepository->findById($id);
 
         if (!$page) {
+            $_SESSION['error'] =
+                'Page not found.';
+
             header('Location: /admin/pages');
             exit;
         }
@@ -282,10 +281,11 @@ class AdminPagesController extends Controller
                 $_POST['hero_subtitle'] ?? ''
             ),
 
-            'hero_media_id' =>
-                !empty($_POST['hero_media_id'])
-                    ? (int)$_POST['hero_media_id']
-                    : null,
+            'hero_media_id' => !empty(
+                $_POST['hero_media_id']
+            )
+                ? (int) $_POST['hero_media_id']
+                : null,
 
             'hero_image_alt' => trim(
                 $_POST['hero_image_alt'] ?? ''
@@ -339,8 +339,7 @@ class AdminPagesController extends Controller
                 $_POST['column5_content'] ?? ''
             ),
 
-            'status' =>
-                $_POST['status'] ?? 'draft',
+            'status' => $_POST['status'] ?? 'draft',
 
             'seo_title' => trim(
                 $_POST['seo_title'] ?? ''
@@ -355,11 +354,7 @@ class AdminPagesController extends Controller
             $_SESSION['error'] =
                 'Page title is required.';
 
-            header(
-                'Location: /admin/pages/edit?id='
-                . $id
-            );
-
+            header('Location: /admin/pages/edit?id=' . $id);
             exit;
         }
 
@@ -367,20 +362,22 @@ class AdminPagesController extends Controller
             $_SESSION['error'] =
                 'Page slug is required.';
 
-            header(
-                'Location: /admin/pages/edit?id='
-                . $id
-            );
-
+            header('Location: /admin/pages/edit?id=' . $id);
             exit;
         }
 
-        $this->pageRepository->update($data);
+        try {
+            $this->pageRepository->update($data);
 
-        header(
-            'Location: /admin/pages?success=updated'
-        );
+            $_SESSION['success'] =
+                'Page updated successfully.';
 
+        } catch (\Throwable $e) {
+            $_SESSION['error'] =
+                'Unable to update page.';
+        }
+
+        header('Location: /admin/pages');
         exit;
     }
 
@@ -390,11 +387,10 @@ class AdminPagesController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function protectedPage(
-        string $slug
-    ): bool {
+    private function protectedPage(string $slug): bool
+    {
         return in_array(
-            strtolower(trim($slug)),
+            strtolower($slug),
             [
                 'home',
                 'blog',
@@ -413,14 +409,14 @@ class AdminPagesController extends Controller
     public function delete(): void
     {
         $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
-        $id = (int)(
-            $_POST['id'] ?? 0
-        );
+        $id = (int) ($_POST['id'] ?? 0);
 
         if ($id <= 0) {
+            $_SESSION['error'] =
+                'Invalid page.';
+
             header('Location: /admin/pages');
             exit;
         }
@@ -428,28 +424,37 @@ class AdminPagesController extends Controller
         $page = $this->pageRepository->findById($id);
 
         if (!$page) {
+            $_SESSION['error'] =
+                'Page not found.';
+
             header('Location: /admin/pages');
             exit;
         }
 
         if (
             $this->protectedPage(
-                (string)$page['slug']
+                (string) $page['slug']
             )
         ) {
-            header(
-                'Location: /admin/pages?error=protected'
-            );
+            $_SESSION['error'] =
+                'This page is protected and cannot be deleted.';
 
+            header('Location: /admin/pages');
             exit;
         }
 
-        $this->pageRepository->delete($id);
+        try {
+            $this->pageRepository->delete($id);
 
-        header(
-            'Location: /admin/pages?success=deleted'
-        );
+            $_SESSION['success'] =
+                'Page deleted successfully.';
 
+        } catch (\Throwable $e) {
+            $_SESSION['error'] =
+                'Unable to delete page.';
+        }
+
+        header('Location: /admin/pages');
         exit;
     }
 }

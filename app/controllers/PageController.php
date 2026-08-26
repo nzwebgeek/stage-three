@@ -27,7 +27,6 @@ class PageController extends Controller
     public function home(): void
     {
         $settings = $this->settings->get();
-
         $pages = $this->pages->getAll();
 
         $this->view(
@@ -42,22 +41,27 @@ class PageController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Dynamic Page
+    | Dynamic CMS Page
     |--------------------------------------------------------------------------
     */
 
     public function show(string $slug): void
     {
+        $slug = trim($slug);
+
+        if ($slug === '') {
+            $this->view('errors/404');
+            return;
+        }
+
         $page = $this->pages->findBySlug($slug);
 
         if (!$page) {
             $this->view('errors/404');
-
             return;
         }
 
         $settings = $this->settings->get();
-
         $pages = $this->pages->getAll();
 
         $this->view(

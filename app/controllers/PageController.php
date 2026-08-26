@@ -18,12 +18,16 @@ class PageController extends Controller
     ) {
     }
 
-    /**
-     * Homepage.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Home
+    |--------------------------------------------------------------------------
+    */
+
     public function home(): void
     {
         $settings = $this->settings->get();
+
         $pages = $this->pages->getAll();
 
         $this->view(
@@ -36,19 +40,26 @@ class PageController extends Controller
         );
     }
 
-    /**
-     * Display a page by slug.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Page
+    |--------------------------------------------------------------------------
+    */
+
     public function show(string $slug): void
     {
         $page = $this->pages->findBySlug($slug);
 
         if (!$page) {
+            http_response_code(404);
+
             $this->view('errors/404');
+
             return;
         }
 
         $settings = $this->settings->get();
+
         $pages = $this->pages->getAll();
 
         $this->view(

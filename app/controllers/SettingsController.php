@@ -59,40 +59,75 @@ class SettingsController extends Controller
         $this->csrf->requireValidToken();
 
         $siteName = trim(
-            (string) ($_POST['site_name'] ?? '')
+            $_POST['site_name'] ?? ''
         );
 
         $contactEmail = trim(
-            (string) ($_POST['contact_email'] ?? '')
+            $_POST['contact_email'] ?? ''
         );
 
         $contactPhone = trim(
-            (string) ($_POST['contact_phone'] ?? '')
+            $_POST['contact_phone'] ?? ''
         );
 
         $copyrightText = trim(
-            (string) ($_POST['copyright_text'] ?? '')
+            $_POST['copyright_text'] ?? ''
         );
 
         $theme = trim(
-            (string) ($_POST['theme'] ?? 'Light')
+            $_POST['theme'] ?? 'Light'
         );
 
-        $maintenanceMode = isset(
-            $_POST['maintenance_mode']
-        ) ? 1 : 0;
+        $maintenanceMode =
+            isset($_POST['maintenance_mode'])
+                ? 1
+                : 0;
 
         $adminEmail = trim(
-            (string) ($_POST['admin_email'] ?? '')
+            $_POST['admin_email'] ?? ''
         );
 
         $seoTitle = trim(
-            (string) ($_POST['seo_title'] ?? '')
+            $_POST['seo_title'] ?? ''
         );
 
         $seoDescription = trim(
-            (string) ($_POST['seo_description'] ?? '')
+            $_POST['seo_description'] ?? ''
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Email Validation
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $contactEmail !== ''
+            && !filter_var(
+                $contactEmail,
+                FILTER_VALIDATE_EMAIL
+            )
+        ) {
+            $_SESSION['error'] =
+                'Please enter a valid contact email.';
+
+            header('Location: /admin/settings');
+            exit;
+        }
+
+        if (
+            $adminEmail !== ''
+            && !filter_var(
+                $adminEmail,
+                FILTER_VALIDATE_EMAIL
+            )
+        ) {
+            $_SESSION['error'] =
+                'Please enter a valid admin email.';
+
+            header('Location: /admin/settings');
+            exit;
+        }
 
         try {
 
@@ -114,10 +149,16 @@ class SettingsController extends Controller
         } catch (\Throwable $e) {
 
             /*
-            |--------------------------------------------------------------------------
-            | Do not expose internal exception details to users
-            |--------------------------------------------------------------------------
-            */
+             * Log the real exception server-side.
+             *
+             * Do not expose database/exception details
+             * to the browser.
+             */
+
+            error_log(
+                'Settings update failed: '
+                . $e->getMessage()
+            );
 
             $_SESSION['error'] =
                 'Unable to save settings.';

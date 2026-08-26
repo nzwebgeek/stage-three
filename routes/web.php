@@ -36,12 +36,6 @@ $router->get(
     [BlogController::class, 'show']
 );
 
-/*
-|--------------------------------------------------------------------------
-| Blog Comments
-|--------------------------------------------------------------------------
-*/
-
 $router->post(
     '/blog/comment/store',
     [CommentController::class, 'store']
@@ -137,10 +131,7 @@ $router->post(
 
 $router->post(
     '/dashboard/change-password',
-    [
-        DashboardController::class,
-        'changePassword'
-    ]
+    [DashboardController::class, 'changePassword']
 );
 
 /*
@@ -164,14 +155,14 @@ $router->get(
     [AdminController::class, 'createUser']
 );
 
-$router->get(
-    '/admin/users/edit',
-    [AdminController::class, 'editUser']
-);
-
 $router->post(
     '/admin/users/create',
     [AdminController::class, 'storeUser']
+);
+
+$router->get(
+    '/admin/users/edit',
+    [AdminController::class, 'editUser']
 );
 
 $router->post(

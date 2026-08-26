@@ -20,9 +20,12 @@ class AdminPagesController extends Controller
     ) {
     }
 
-    /**
-     * List pages.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Index
+    |--------------------------------------------------------------------------
+    */
+
     public function index(): void
     {
         $this->auth->requireAdmin();
@@ -40,9 +43,12 @@ class AdminPagesController extends Controller
         );
     }
 
-    /**
-     * Show create page.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Create
+    |--------------------------------------------------------------------------
+    */
+
     public function create(): void
     {
         $this->auth->requireAdmin();
@@ -60,24 +66,39 @@ class AdminPagesController extends Controller
         );
     }
 
-    /**
-     * Store page.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Store
+    |--------------------------------------------------------------------------
+    */
+
     public function store(): void
     {
         $this->auth->requireAdmin();
+
         $this->csrf->requireValidToken();
 
         $data = [
-            'title' => trim($_POST['title'] ?? ''),
-            'slug' => trim($_POST['slug'] ?? ''),
+            'title' => trim(
+                $_POST['title'] ?? ''
+            ),
 
-            'hero_title' => trim($_POST['hero_title'] ?? ''),
-            'hero_subtitle' => trim($_POST['hero_subtitle'] ?? ''),
+            'slug' => trim(
+                $_POST['slug'] ?? ''
+            ),
 
-            'hero_media_id' => !empty($_POST['hero_media_id'])
-                ? (int)$_POST['hero_media_id']
-                : null,
+            'hero_title' => trim(
+                $_POST['hero_title'] ?? ''
+            ),
+
+            'hero_subtitle' => trim(
+                $_POST['hero_subtitle'] ?? ''
+            ),
+
+            'hero_media_id' =>
+                !empty($_POST['hero_media_id'])
+                    ? (int)$_POST['hero_media_id']
+                    : null,
 
             'hero_image_alt' => trim(
                 $_POST['hero_image_alt'] ?? ''
@@ -131,7 +152,8 @@ class AdminPagesController extends Controller
                 $_POST['column5_content'] ?? ''
             ),
 
-            'status' => $_POST['status'] ?? 'draft',
+            'status' =>
+                $_POST['status'] ?? 'draft',
 
             'seo_title' => trim(
                 $_POST['seo_title'] ?? ''
@@ -142,22 +164,50 @@ class AdminPagesController extends Controller
             ),
         ];
 
+        /*
+        |--------------------------------------------------------------------------
+        | Basic Validation
+        |--------------------------------------------------------------------------
+        */
+
+        if ($data['title'] === '') {
+            $_SESSION['error'] =
+                'Page title is required.';
+
+            header('Location: /admin/pages/create');
+            exit;
+        }
+
+        if ($data['slug'] === '') {
+            $_SESSION['error'] =
+                'Page slug is required.';
+
+            header('Location: /admin/pages/create');
+            exit;
+        }
+
         $this->pageRepository->create($data);
 
         header(
             'Location: /admin/pages?success=created'
         );
+
         exit;
     }
 
-    /**
-     * Show edit page.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Edit
+    |--------------------------------------------------------------------------
+    */
+
     public function edit(): void
     {
         $this->auth->requireAdmin();
 
-        $id = (int)($_GET['id'] ?? 0);
+        $id = (int)(
+            $_GET['id'] ?? 0
+        );
 
         if ($id <= 0) {
             header('Location: /admin/pages');
@@ -185,17 +235,30 @@ class AdminPagesController extends Controller
         );
     }
 
-    /**
-     * Update page.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Update
+    |--------------------------------------------------------------------------
+    */
+
     public function update(): void
     {
         $this->auth->requireAdmin();
+
         $this->csrf->requireValidToken();
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = (int)(
+            $_POST['id'] ?? 0
+        );
 
         if ($id <= 0) {
+            header('Location: /admin/pages');
+            exit;
+        }
+
+        $page = $this->pageRepository->findById($id);
+
+        if (!$page) {
             header('Location: /admin/pages');
             exit;
         }
@@ -219,9 +282,10 @@ class AdminPagesController extends Controller
                 $_POST['hero_subtitle'] ?? ''
             ),
 
-            'hero_media_id' => !empty($_POST['hero_media_id'])
-                ? (int)$_POST['hero_media_id']
-                : null,
+            'hero_media_id' =>
+                !empty($_POST['hero_media_id'])
+                    ? (int)$_POST['hero_media_id']
+                    : null,
 
             'hero_image_alt' => trim(
                 $_POST['hero_image_alt'] ?? ''
@@ -275,7 +339,8 @@ class AdminPagesController extends Controller
                 $_POST['column5_content'] ?? ''
             ),
 
-            'status' => $_POST['status'] ?? 'draft',
+            'status' =>
+                $_POST['status'] ?? 'draft',
 
             'seo_title' => trim(
                 $_POST['seo_title'] ?? ''
@@ -286,21 +351,50 @@ class AdminPagesController extends Controller
             ),
         ];
 
+        if ($data['title'] === '') {
+            $_SESSION['error'] =
+                'Page title is required.';
+
+            header(
+                'Location: /admin/pages/edit?id='
+                . $id
+            );
+
+            exit;
+        }
+
+        if ($data['slug'] === '') {
+            $_SESSION['error'] =
+                'Page slug is required.';
+
+            header(
+                'Location: /admin/pages/edit?id='
+                . $id
+            );
+
+            exit;
+        }
+
         $this->pageRepository->update($data);
 
         header(
             'Location: /admin/pages?success=updated'
         );
+
         exit;
     }
 
-    /**
-     * Determine whether a page is protected.
-     */
-    private function protectedPage(string $slug): bool
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | Protected Pages
+    |--------------------------------------------------------------------------
+    */
+
+    private function protectedPage(
+        string $slug
+    ): bool {
         return in_array(
-            $slug,
+            strtolower(trim($slug)),
             [
                 'home',
                 'blog',
@@ -310,15 +404,21 @@ class AdminPagesController extends Controller
         );
     }
 
-    /**
-     * Delete page.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
+
     public function delete(): void
     {
         $this->auth->requireAdmin();
+
         $this->csrf->requireValidToken();
 
-        $id = (int)($_POST['id'] ?? 0);
+        $id = (int)(
+            $_POST['id'] ?? 0
+        );
 
         if ($id <= 0) {
             header('Location: /admin/pages');
@@ -332,10 +432,15 @@ class AdminPagesController extends Controller
             exit;
         }
 
-        if ($this->protectedPage($page['slug'])) {
+        if (
+            $this->protectedPage(
+                (string)$page['slug']
+            )
+        ) {
             header(
                 'Location: /admin/pages?error=protected'
             );
+
             exit;
         }
 
@@ -344,6 +449,7 @@ class AdminPagesController extends Controller
         header(
             'Location: /admin/pages?success=deleted'
         );
+
         exit;
     }
 }

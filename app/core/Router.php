@@ -8,107 +8,310 @@ use RuntimeException;
 
 class Router
 {
+    /**
+     * Registered application routes.
+     *
+     * Each route is stored as:
+     *
+     * [
+     *     'GET' => [
+     *         '/login' => [Controller::class, 'method']
+     *     ],
+     *     'POST' => [
+     *         '/login' => [Controller::class, 'method']
+     *     ]
+     * ]
+     */
     private array $routes = [
         'GET' => [],
         'POST' => [],
     ];
 
-
     public function __construct(
-        private Container $container
+        private readonly Container $container
     ) {
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Register GET Route
+    |--------------------------------------------------------------------------
+    */
 
     public function get(
         string $route,
         array $action
     ): void {
+        $route = $this->normalizeRoute($route);
 
         $this->routes['GET'][$route] = $action;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Register POST Route
+    |--------------------------------------------------------------------------
+    */
 
     public function post(
         string $route,
         array $action
     ): void {
+        $route = $this->normalizeRoute($route);
 
         $this->routes['POST'][$route] = $action;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dispatch
+    |--------------------------------------------------------------------------
+    */
 
     public function dispatch(): void
-{
-   $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    {
+        $method = strtoupper(
+            $_SERVER['REQUEST_METHOD'] ?? 'GET'
+        );
 
-    $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 
-    $uri = parse_url(
-        $requestUri,
-        PHP_URL_PATH
-    );
+        $uri = parse_url(
+            $requestUri,
+            PHP_URL_PATH
+        );
 
-    if (!is_string($uri) || $uri === '') {
-        $uri = '/';
-    }
+        if (!is_string($uri) || $uri === '') {
+            $uri = '/';
+        }
 
-    $uri = rtrim($uri, '/');
+        $uri = $this->normalizeRoute($uri);
 
-    if ($uri === '') {
-        $uri = '/';
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | Exact Route Match
+        |--------------------------------------------------------------------------
+        */
 
+        $route = $this->routes[$method][$uri] ?? null;
 
+        if ($route !== null) {
+            $this->callAction($route);
 
-    $route = $this->routes[$method][$uri] ?? null;
+            return;
+        }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Dynamic Route Match
+        |--------------------------------------------------------------------------
+        |
+        | Currently supports:
+        |
+        |     /page/{slug}
+        |
+        | Example:
+        |
+        |     /page/about
+        |
+        | This prevents the router from guessing parameters based
+        | on the controller method name.
+        |
+        */
 
-    if ($route === null) {
+        foreach ($this->routes[$method] ?? [] as $routePattern => $action) {
+
+            $parameters = $this->matchRoute(
+                $routePattern,
+                $uri
+            );
+
+            if ($parameters !== null) {
+                $this->callAction(
+                    $action,
+                    $parameters
+                );
+
+                return;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | 404
+        |--------------------------------------------------------------------------
+        */
 
         $errorController = $this->container->get(
             \App\Controllers\ErrorController::class
         );
 
         $errorController->notFound();
-
-        return;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Call Controller Action
+    |--------------------------------------------------------------------------
+    */
 
-    [
-        $controllerClass,
-        $controllerMethod
-    ] = $route;
+    private function callAction(
+        array $action,
+        array $parameters = []
+    ): void {
 
+        if (count($action) !== 2) {
+            throw new RuntimeException(
+                'Invalid route action.'
+            );
+        }
 
-    $controller = $this->container->get(
-        $controllerClass
-    );
+        [
+            $controllerClass,
+            $controllerMethod
+        ] = $action;
 
-
-    if (!method_exists(
-        $controller,
-        $controllerMethod
-    )) {
-
-        throw new RuntimeException(
-            'Controller method not found.'
+        $controller = $this->container->get(
+            $controllerClass
         );
 
+        if (!method_exists(
+            $controller,
+            $controllerMethod
+        )) {
+            throw new RuntimeException(
+                'Controller method not found: '
+                . $controllerClass
+                . '::'
+                . $controllerMethod
+            );
+        }
+
+        $controller->$controllerMethod(...$parameters);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Route Matching
+    |--------------------------------------------------------------------------
+    */
 
-    // Pass slug for dynamic pages
-    if ($controllerMethod === 'show') {
+    private function matchRoute(
+        string $routePattern,
+        string $uri
+    ): ?array {
 
-        $slug = trim($uri, '/');
+        /*
+         * Convert:
+         *
+         *     /page/{slug}
+         *
+         * Into:
+         *
+         *     #^/page/([^/]+)$#
+         */
 
-        $controller->$controllerMethod($slug);
+        $routePattern = $this->normalizeRoute(
+            $routePattern
+        );
 
-        return;
+        $segments = explode(
+            '/',
+            trim($routePattern, '/')
+        );
+
+        $parameters = [];
+
+        $regex = [];
+
+        foreach ($segments as $segment) {
+
+            if (
+                strlen($segment) >= 2
+                && $segment[0] === '{'
+                && $segment[strlen($segment) - 1] === '}'
+            ) {
+
+                $parameterName = substr(
+                    $segment,
+                    1,
+                    -1
+                );
+
+                if ($parameterName === '') {
+                    return null;
+                }
+
+                $regex[] = '([^/]+)';
+
+                $parameters[] = $parameterName;
+
+                continue;
+            }
+
+            $regex[] = preg_quote(
+                $segment,
+                '#'
+            );
+        }
+
+        $pattern = '#^/'
+            . implode('/', $regex)
+            . '$#';
+
+        if (!preg_match(
+            $pattern,
+            $uri,
+            $matches
+        )) {
+            return null;
+        }
+
+        /*
+         * Remove the complete URI match.
+         */
+        array_shift($matches);
+
+        return array_map(
+            static fn(string $value): string =>
+                rawurldecode($value),
+            $matches
+        );
     }
 
-    $controller->$controllerMethod();
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize Route
+    |--------------------------------------------------------------------------
+    */
+
+    private function normalizeRoute(
+        string $route
+    ): string {
+
+        $route = trim($route);
+
+        if ($route === '') {
+            return '/';
+        }
+
+        /*
+         * Make sure route starts with /.
+         */
+        if ($route[0] !== '/') {
+            $route = '/' . $route;
+        }
+
+        /*
+         * Remove trailing slash except for root.
+         */
+        if ($route !== '/') {
+            $route = rtrim(
+                $route,
+                '/'
+            );
+        }
+
+        return $route;
     }
 }

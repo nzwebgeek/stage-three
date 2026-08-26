@@ -7,298 +7,130 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Services\AuthService;
 use App\Repositories\PageRepository;
-use App\Repositories\ImageRepository;
+use App\Repositories\SettingsRepository;
 use App\Services\CsrfService;
 
-
-
-class AdminPagesController extends Controller
+class AuthController extends Controller
 {
     public function __construct(
         private readonly AuthService $auth,
-        private readonly PageRepository $pageRepository,
-        private readonly ImageRepository $imageRepository,
-         private readonly CsrfService $csrf
+        private readonly PageRepository $pages,
+        private readonly SettingsRepository $settings,
+        private readonly CsrfService $csrf
     ) {
     }
 
-
-    public function index(): void
+    /**
+     * Show login page.
+     */
+    public function login(): void
     {
-        $this->auth->requireAdmin();
-
-
-        $pages = $this->pageRepository->adminAll();
-
-
         $this->view(
-            'admin/dashboard/pages/index',
+            'auth/login',
             [
-                'title' => 'Manage Pages',
-                'pages' => $pages,
+                'message' => '',
+                'messageType' => '',
+                'username' => '',
+                'pages' => $this->pages->getAll(),
+                'settings' => $this->settings->get(),
                 'csrfToken' => $this->csrf->token(),
-
-            ],
-            'admin'
+            ]
         );
     }
 
-
-    public function create(): void
+    /**
+     * Authenticate user.
+     */
+    public function authenticate(): void
     {
-        $this->auth->requireAdmin();
-   
-        $images = $this->imageRepository->all();
+        $this->csrf->requireValidToken();
+
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        $result = $this->auth->login(
+            $username,
+            $password
+        );
+
+        if ($result->success) {
+            header('Location: /dashboard');
+            exit;
+        }
 
         $this->view(
-            'admin/dashboard/pages/create',
+            'auth/login',
             [
-                'title' => 'Create Page',
-                'images' => $images,
+                'message' => $result->message,
+                'messageType' => $result->type,
+                'username' => $username,
+                'pages' => $this->pages->getAll(),
+                'settings' => $this->settings->get(),
                 'csrfToken' => $this->csrf->token(),
-
-            ],
-            'admin'
+            ]
         );
     }
 
+    /**
+     * Logout current user.
+     */
+    public function logout(): void
+    {
+        $this->csrf->requireValidToken();
 
+        $this->auth->logout();
+
+        header('Location: /login');
+        exit;
+    }
+
+    /**
+     * Show registration page.
+     */
+    public function register(): void
+    {
+        $this->view(
+            'auth/register',
+            [
+                'message' => '',
+                'messageType' => '',
+                'username' => '',
+                'email' => '',
+                'pages' => $this->pages->getAll(),
+                'settings' => $this->settings->get(),
+                'csrfToken' => $this->csrf->token(),
+            ]
+        );
+    }
+
+    /**
+     * Register new user.
+     */
     public function store(): void
     {
-        $this->auth->requireAdmin();
-
         $this->csrf->requireValidToken();
 
-        $data = [
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
 
-            'title' => trim($_POST['title'] ?? ''),
-
-            'slug' => trim($_POST['slug'] ?? ''),
-
-          
-            'hero_title' => trim($_POST['hero_title'] ?? ''),
-
-            'hero_subtitle' => trim($_POST['hero_subtitle'] ?? ''),
-
-            'hero_media_id' => !empty($_POST['hero_media_id'])
-                ? (int)$_POST['hero_media_id']
-                : null,
-
-            'hero_image_alt' => trim($_POST['hero_image_alt'] ?? ''),
-
-
-            'main_heading' => trim($_POST['main_heading'] ?? ''),
-
-            'main_content' => trim($_POST['main_content'] ?? ''),
-
-
-            'column1_title' => trim($_POST['column1_title'] ?? ''),
-
-            'column1_content' => trim($_POST['column1_content'] ?? ''),
-
-
-            'column2_title' => trim($_POST['column2_title'] ?? ''),
-
-            'column2_content' => trim($_POST['column2_content'] ?? ''),
-
-
-            'column3_title' => trim($_POST['column3_title'] ?? ''),
-
-            'column3_content' => trim($_POST['column3_content'] ?? ''),
-
-
-            'column4_title' => trim($_POST['column4_title'] ?? ''),
-
-            'column4_content' => trim($_POST['column4_content'] ?? ''),
-
-
-            'column5_title' => trim($_POST['column5_title'] ?? ''),
-
-            'column5_content' => trim($_POST['column5_content'] ?? ''),
-
-
-            'status' => $_POST['status'] ?? 'draft',
-
-
-            'seo_title' => trim($_POST['seo_title'] ?? ''),
-
-            'seo_description' => trim($_POST['seo_description'] ?? '')
-
-        ];
-
-
-        $this->pageRepository->create($data);
-
-
-        header('Location: /admin/pages?success=created');
-
-        exit;
-    }
-
-
-
-    public function edit(): void
-    {
-        $this->auth->requireAdmin();
-
-
-        $id = (int)($_GET['id'] ?? 0);
-
-
-        $page = $this->pageRepository->findById($id);
-
-
-        if (!$page) {
-
-            header('Location: /admin/pages');
-
-            exit;
-        }
-
-        $images = $this->imageRepository->all();
+        $result = $this->auth->register(
+            $username,
+            $email,
+            $_POST['password'] ?? '',
+            $_POST['confirm_password'] ?? ''
+        );
 
         $this->view(
-            'admin/dashboard/pages/edit',
+            'auth/register',
             [
-                'title' => 'Edit Page',
-                'page' => $page,
-                'images' => $images,
+                'message' => $result->message,
+                'messageType' => $result->type,
+                'username' => $username,
+                'email' => $email,
+                'pages' => $this->pages->getAll(),
+                'settings' => $this->settings->get(),
                 'csrfToken' => $this->csrf->token(),
-
-            ],
-            'admin'
+            ]
         );
-    }
-
-
-
-
-    public function update(): void
-    {
-        $this->auth->requireAdmin();
-
-          $this->csrf->requireValidToken();
-
-        $data = [
-
-            'id' => (int)($_POST['id'] ?? 0),
-
-            'title' => trim($_POST['title'] ?? ''),
-
-            'slug' => trim($_POST['slug'] ?? ''),
-
-
-            'hero_title' => trim($_POST['hero_title'] ?? ''),
-
-            'hero_subtitle' => trim($_POST['hero_subtitle'] ?? ''),
-
-            'hero_media_id' => !empty($_POST['hero_media_id'])
-            ? (int)$_POST['hero_media_id']
-            : null,
-
-            'hero_image_alt' => trim($_POST['hero_image_alt'] ?? ''),
-
-
-            'main_heading' => trim($_POST['main_heading'] ?? ''),
-
-            'main_content' => trim($_POST['main_content'] ?? ''),
-
-
-            'column1_title' => trim($_POST['column1_title'] ?? ''),
-
-            'column1_content' => trim($_POST['column1_content'] ?? ''),
-
-
-            'column2_title' => trim($_POST['column2_title'] ?? ''),
-
-            'column2_content' => trim($_POST['column2_content'] ?? ''),
-
-
-            'column3_title' => trim($_POST['column3_title'] ?? ''),
-
-            'column3_content' => trim($_POST['column3_content'] ?? ''),
-
-
-            'column4_title' => trim($_POST['column4_title'] ?? ''),
-
-            'column4_content' => trim($_POST['column4_content'] ?? ''),
-
-
-            'column5_title' => trim($_POST['column5_title'] ?? ''),
-
-            'column5_content' => trim($_POST['column5_content'] ?? ''),
-
-
-            'status' => $_POST['status'] ?? 'draft',
-
-
-            'seo_title' => trim($_POST['seo_title'] ?? ''),
-
-            'seo_description' => trim($_POST['seo_description'] ?? '')
-
-        ];
-
-
-        $this->pageRepository->update($data);
-
-
-        header('Location: /admin/pages?success=updated');
-
-        exit;
-    }
-
-
-
-
-    private function protectedPage(string $slug): bool
-    {
-        return in_array(
-            $slug,
-            [
-                'home',
-                'blog',
-                'contact'
-            ],
-            true
-        );
-    }
-
-
-
-
-    public function delete(): void
-    {
-        $this->auth->requireAdmin();
-
-        $this->csrf->requireValidToken();
-        
-        $id = (int)($_POST['id'] ?? 0);
-
-
-        $page = $this->pageRepository->findById($id);
-
-
-        if (!$page) {
-
-            header('Location: /admin/pages');
-
-            exit;
-        }
-
-
-        if ($this->protectedPage($page['slug'])) {
-
-            header('Location: /admin/pages?error=protected');
-
-            exit;
-        }
-
-
-        $this->pageRepository->delete($id);
-
-
-        header('Location: /admin/pages?success=deleted');
-
-        exit;
     }
 }

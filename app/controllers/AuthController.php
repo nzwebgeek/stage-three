@@ -2,14 +2,6 @@
 
 declare(strict_types=1);
 
-/*
-|--------------------------------------------------------------------------
-| AuthController
-|--------------------------------------------------------------------------
-| Handles HTTP requests related to authentication.
-|--------------------------------------------------------------------------
-*/
-
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -36,6 +28,11 @@ class AuthController extends Controller
 
     public function login(): void
     {
+        if ($this->auth->isLoggedIn()) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $this->view(
             'auth/login',
             [
@@ -59,13 +56,17 @@ class AuthController extends Controller
     {
         $this->csrf->requireValidToken();
 
+        if ($this->auth->isLoggedIn()) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $username = trim(
-            (string) ($_POST['username'] ?? '')
+            $_POST['username'] ?? ''
         );
 
-        $password = (string) (
-            $_POST['password'] ?? ''
-        );
+        $password =
+            $_POST['password'] ?? '';
 
         $result = $this->auth->login(
             $username,
@@ -98,6 +99,8 @@ class AuthController extends Controller
 
     public function logout(): void
     {
+        $this->auth->requireLogin();
+
         $this->csrf->requireValidToken();
 
         $this->auth->logout();
@@ -114,6 +117,11 @@ class AuthController extends Controller
 
     public function register(): void
     {
+        if ($this->auth->isLoggedIn()) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $this->view(
             'auth/register',
             [
@@ -138,27 +146,24 @@ class AuthController extends Controller
     {
         $this->csrf->requireValidToken();
 
+        if ($this->auth->isLoggedIn()) {
+            header('Location: /dashboard');
+            exit;
+        }
+
         $username = trim(
-            (string) ($_POST['username'] ?? '')
+            $_POST['username'] ?? ''
         );
 
         $email = trim(
-            (string) ($_POST['email'] ?? '')
-        );
-
-        $password = (string) (
-            $_POST['password'] ?? ''
-        );
-
-        $confirmPassword = (string) (
-            $_POST['confirm_password'] ?? ''
+            $_POST['email'] ?? ''
         );
 
         $result = $this->auth->register(
             $username,
             $email,
-            $password,
-            $confirmPassword
+            $_POST['password'] ?? '',
+            $_POST['confirm_password'] ?? ''
         );
 
         $this->view(

@@ -51,8 +51,6 @@ class PageController extends Controller
         $page = $this->pages->findBySlug($slug);
 
         if (!$page) {
-            http_response_code(404);
-
             $this->view('errors/404');
 
             return;
